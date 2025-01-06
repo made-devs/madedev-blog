@@ -1,19 +1,23 @@
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
+import { validationResult } from 'express-validator';
 
 export const login = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const { username, password } = req.body;
 
   try {
     // Find the user by username
     const user = await User.findOne({ username });
-    if (!user)
-      return res.status(400).json({ error: 'Invalid username or password' });
+    if (!user) return res.status(400).json({ error: 'Invalid credentials' });
 
     // Compare the entered password with the stored hashed password
     const isMatch = await user.comparePassword(password);
-    if (!isMatch)
-      return res.status(400).json({ error: 'Invalid username or password' });
+    if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
 
     // Create a JWT token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
@@ -28,6 +32,11 @@ export const login = async (req, res) => {
 };
 
 export const register = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const { username, password } = req.body;
 
   try {
@@ -43,7 +52,12 @@ export const register = async (req, res) => {
     await newUser.save();
 
     // Send a success message
-    res.status(201).json({ message: 'User registered successfully' });
+    res
+      .status(201)
+      .json({
+        message: 'User registered successfully',
+        user: { username: newUser.username },
+      });
   } catch (error) {
     res.status(500).json({ error: 'Error registering user', details: error });
   }
