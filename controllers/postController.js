@@ -1,6 +1,13 @@
+import { validationResult } from 'express-validator';
 import Post from '../models/Post.js';
 
 export const createPost = async (req, res) => {
+  // Catch error validation
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   try {
     const { title, content, author } = req.body; // Extract data from the request body
 
@@ -24,8 +31,26 @@ export const createPost = async (req, res) => {
 
 export const allPosts = async (req, res) => {
   try {
-    const posts = await Post.find();
-    res.status(200).json(posts);
+    // Add Page and Limit from URL
+    const { page = 2, limit = 5 } = req.query;
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+
+    // Take data from DB
+    const posts = await Post.find()
+      .skip((pageNumber - 1) * limitNumber)
+      .limit(limitNumber);
+    const totalPosts = await Post.countDocuments();
+
+    res.status(200).json({
+      posts,
+      pagination: {
+        total: totalPosts,
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: Math.ceil(totalPosts / limitNumber),
+      },
+    });
   } catch (error) {
     res.status(500).json({ error: 'Error fetching posts', details: error });
   }
