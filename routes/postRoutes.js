@@ -3,6 +3,7 @@ import {
   allPosts,
   createPost,
   updatePost,
+  deletePost,
 } from '../controllers/postController.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 import { check } from 'express-validator';
@@ -30,6 +31,8 @@ router.put(
   ],
   updatePost
 );
+
+router.delete('/:id', authMiddleware, deletePost);
 
 router.get('/', allPosts);
 
