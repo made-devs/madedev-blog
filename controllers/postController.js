@@ -11,11 +11,6 @@ export const createPost = async (req, res) => {
   try {
     const { title, content, author } = req.body; // Extract data from the request body
 
-    // Check  if all fields are provided
-    if (!title || !content || !author) {
-      return res.status(400).json({ error: 'All fields are required' });
-    }
-
     // Create a new post instance with the data
     const newPost = new Post({ title, content, author });
 
@@ -32,9 +27,9 @@ export const createPost = async (req, res) => {
 export const allPosts = async (req, res) => {
   try {
     // Add Page and Limit from URL
-    const { page = 2, limit = 5 } = req.query;
-    const pageNumber = parseInt(page, 10);
-    const limitNumber = parseInt(limit, 10);
+    const { page = 1, limit = 10 } = req.query;
+    const pageNumber = parseInt(page, 10 || 1);
+    const limitNumber = parseInt(limit, 10 || 10);
 
     // Take data from DB
     const posts = await Post.find()
@@ -53,5 +48,26 @@ export const allPosts = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Error fetching posts', details: error });
+  }
+};
+
+export const updatePost = async (req, res) => {
+  const { id } = req.params; // Take ID from URL
+  const { title, content, author } = req.body; // Take data from req.body
+
+  try {
+    const updatedPost = await Post.findByIdAndUpdate(
+      id,
+      { title, content, author },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedPost) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+
+    res.status(200).json(updatedPost);
+  } catch (error) {
+    res.status(500).json({ error: 'Error updating post', details: error });
   }
 };

@@ -19,15 +19,28 @@ export const login = async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
 
-    // Create a JWT token
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '1h',
-    });
+    try {
+      // Create a JWT token
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+        expiresIn: '1h',
+      });
+
+      // Send token as HttpOnly cookie
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 3600000,
+      });
+    } catch (error) {
+      console.error('JWT error:', error.message);
+      res.status(500).json({ error: 'Error generating token' });
+    }
 
     // Send the token as a response
-    res.status(200).json({ message: 'Login successful', token });
+    res.status(200).json({ message: 'Login successful' });
   } catch (error) {
-    res.status(500).json({ error: 'Error logging in', details: error });
+    res.status(500).json({ error: 'Invalid username or password' });
   }
 };
 
@@ -52,12 +65,10 @@ export const register = async (req, res) => {
     await newUser.save();
 
     // Send a success message
-    res
-      .status(201)
-      .json({
-        message: 'User registered successfully',
-        user: { username: newUser.username },
-      });
+    res.status(201).json({
+      message: 'User registered successfully',
+      user: { username: newUser.username },
+    });
   } catch (error) {
     res.status(500).json({ error: 'Error registering user', details: error });
   }
