@@ -5,12 +5,18 @@ import {
   updatePost,
   deletePost,
   addComment,
+  allComments,
+  deleteComment,
 } from '../controllers/postController.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 import { check } from 'express-validator';
 import checkRole from '../middlewares/checkRole.js';
 
 const router = express.Router();
+
+router.get('/', allPosts);
+
+router.get('/:postId/comments', allComments);
 
 router.post(
   '/',
@@ -24,14 +30,14 @@ router.post(
 );
 
 router.post(
-  '/:id/comments',
+  '/:postId/comments',
   authMiddleware,
   [check('content', 'Comment content is required').not().isEmpty()],
   addComment
 );
 
 router.put(
-  '/:id', // Route for updating post based by ID
+  '/:postId', // Route for updating post based by ID
   authMiddleware,
   checkRole('admin'),
   [
@@ -41,8 +47,8 @@ router.put(
   updatePost
 );
 
-router.delete('/:id', authMiddleware, checkRole('admin'), deletePost);
+router.delete('/:postId', authMiddleware, checkRole('admin'), deletePost);
 
-router.get('/', allPosts);
+router.delete('/:postId/comments/:commentId', authMiddleware, deleteComment);
 
 export default router;

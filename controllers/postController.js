@@ -52,12 +52,12 @@ export const allPosts = async (req, res) => {
 };
 
 export const updatePost = async (req, res) => {
-  const { id } = req.params; // Take ID from URL
+  const { postId } = req.params; // Take ID from URL
   const { title, content, author } = req.body; // Take data from req.body
 
   try {
     const updatedPost = await Post.findByIdAndUpdate(
-      id,
+      postId,
       { title, content, author },
       { new: true, runValidators: true }
     );
@@ -73,10 +73,10 @@ export const updatePost = async (req, res) => {
 };
 
 export const deletePost = async (req, res) => {
-  const { id } = req.params; // Take ID from URL
+  const { postId } = req.params; // Take ID from URL
 
   try {
-    const deletedPost = await Post.findByIdAndDelete(id);
+    const deletedPost = await Post.findByIdAndDelete(postId);
 
     if (!deletedPost) {
       return res.send(404).json({ error: 'Post not found' });
@@ -89,13 +89,13 @@ export const deletePost = async (req, res) => {
 };
 
 export const addComment = async (req, res) => {
-  const { id } = req.params; // Take ID from URL
+  const { postId } = req.params; // Take post ID from URL
   const { content } = req.body; // Take comment from body req
   const user = req.user.userId; // Take user ID from token
 
   try {
     // FInd post based ID
-    const post = await Post.findById(id);
+    const post = await Post.findById(postId);
 
     if (!post) {
       return res.status(404).json({ error: 'Post not found' });
@@ -114,5 +114,76 @@ export const addComment = async (req, res) => {
     res.status(201).json({ message: 'Comment added successfully', post });
   } catch (error) {
     res.status(500).json({ error: 'Error adding comment', details: error });
+  }
+};
+
+export const allComments = async (req, res) => {
+  const { postId } = req.params; // Take post ID from URL
+  const { page = 1, limit = 10 } = req.query;
+
+  try {
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+    const startIndex = (pageNumber - 1) * limitNumber;
+    const endIndex = pageNumber * limitNumber;
+
+    const paginationComments = post.comments.slice(startIndex, endIndex);
+
+    res.status(200).json({
+      comments: paginationComments,
+      pagination: {
+        totalComments: post.comments.length,
+        page: pageNumber,
+        limit: limitNumber,
+        totalPages: Math.ceil(post.comments.length / limitNumber),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching comments', details: error });
+  }
+};
+
+export const deleteComment = async (req, res) => {
+  const { postId, commentId } = req.params; // Take ID post and comment
+  const userRole = req.user.role; // Role from login user
+  const userId = req.user.userId; // ID user yang login
+
+  try {
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+
+    // Find comment based ID
+    const commentIndex = post.comments.findIndex(
+      (comment) => comment._id.toString() === commentId
+    );
+
+    if (commentIndex === -1) {
+      res.status(404).json({ error: 'Comment not found' });
+    }
+
+    // Make sure user have permission to delete
+    const comment = post.comments[commentIndex];
+    if (userRole !== 'admin' && comment.user !== userId) {
+      return res
+        .status(404)
+        .json({ error: 'You do not have permission to delete this comment' });
+    }
+
+    // delete comment
+    post.comments.splice(commentIndex, 1);
+    await post.save();
+
+    res.status(200).json({ message: 'Comment deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error deleting comment', details: error });
   }
 };
