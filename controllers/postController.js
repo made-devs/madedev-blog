@@ -87,3 +87,32 @@ export const deletePost = async (req, res) => {
     res.status(500).json({ error: 'Error deleting post', details: error });
   }
 };
+
+export const addComment = async (req, res) => {
+  const { id } = req.params; // Take ID from URL
+  const { content } = req.body; // Take comment from body req
+  const user = req.user.userId; // Take user ID from token
+
+  try {
+    // FInd post based ID
+    const post = await Post.findById(id);
+
+    if (!post) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+
+    const newComment = {
+      user, // User ID from JWT token
+      content, // comment
+      createdAt: new Date(), // Time created
+    };
+
+    post.comments.push(newComment);
+
+    await post.save();
+
+    res.status(201).json({ message: 'Comment added successfully', post });
+  } catch (error) {
+    res.status(500).json({ error: 'Error adding comment', details: error });
+  }
+};

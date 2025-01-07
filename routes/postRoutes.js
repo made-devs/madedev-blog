@@ -4,6 +4,7 @@ import {
   createPost,
   updatePost,
   deletePost,
+  addComment,
 } from '../controllers/postController.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 import { check } from 'express-validator';
@@ -20,6 +21,13 @@ router.post(
     check('content', 'Content is required').not().isEmpty(),
   ],
   createPost
+);
+
+router.post(
+  '/:id/comments',
+  authMiddleware,
+  [check('content', 'Comment content is required').not().isEmpty()],
+  addComment
 );
 
 router.put(

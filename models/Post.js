@@ -6,6 +6,13 @@ const postSchema = new mongoose.Schema({
   content: { type: String, required: true },
   author: { type: String, default: 'Madedev' },
   createdAt: { type: Date, default: Date.now },
+  comments: [
+    {
+      user: { type: String, required: true },
+      content: { type: String, required: true },
+      createdAt: { type: String, default: Date.now },
+    },
+  ],
 });
 
 // Create a model from the schema and export it
